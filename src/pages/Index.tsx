@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import ScaryImage from "@/components/ScaryImage";
-import Layout from "@/components/Layout";
+import ScaryImage from "../components/ScaryImage";
+import Layout from "../components/Layout";
 import Icon from "@/components/ui/icon";
 
 const Index = () => {
@@ -12,15 +12,42 @@ const Index = () => {
   const generateScaryImage = () => {
     setIsLoading(true);
     
-    // Имитация запроса к API генерации изображений
-    // В реальном приложении здесь был бы запрос к API генерации изображений
-    setTimeout(() => {
-      // Генерируем случайное изображение через Unsplash с тематикой horror/scary
-      const randomId = Math.floor(Math.random() * 1000);
-      const imageUrl = `https://source.unsplash.com/random/800x600?horror,scary,dark,creepy&sig=${randomId}`;
+    // Используем более надежный способ получения изображений
+    const scaryKeywords = [
+      "horror", "scary", "dark", "creepy", "nightmare", 
+      "spooky", "terrifying", "eerie", "sinister", "haunted"
+    ];
+    
+    // Выбираем случайное ключевое слово
+    const randomKeyword = scaryKeywords[Math.floor(Math.random() * scaryKeywords.length)];
+    // Добавляем случайный параметр для предотвращения кеширования
+    const timestamp = new Date().getTime();
+    const randomSize = Math.floor(Math.random() * 100) + 800; // случайный размер от 800 до 900
+    
+    // Формируем URL для получения изображения
+    const imageUrl = `https://source.unsplash.com/${randomSize}x600?${randomKeyword}&sig=${timestamp}`;
+    
+    // Предзагрузка изображения для проверки доступности
+    const img = new Image();
+    img.onload = () => {
       setScaryImage(imageUrl);
       setIsLoading(false);
-    }, 1500);
+    };
+    img.onerror = () => {
+      // В случае ошибки пробуем другое ключевое слово
+      const fallbackKeyword = "dark";
+      const fallbackUrl = `https://source.unsplash.com/random/800x600?${fallbackKeyword}&sig=${timestamp}`;
+      setScaryImage(fallbackUrl);
+      setIsLoading(false);
+    };
+    img.src = imageUrl;
+    
+    // Добавляем таймаут на случай, если изображение загружается слишком долго
+    setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 5000);
   };
 
   return (
@@ -42,12 +69,12 @@ const Index = () => {
             >
               {isLoading ? (
                 <>
-                  <Icon name="Loader2" className="animate-spin" />
+                  <Icon name="Loader2" className="mr-2 animate-spin" />
                   Генерация...
                 </>
               ) : (
                 <>
-                  <Icon name="Skull" />
+                  <Icon name="Skull" className="mr-2" />
                   Сгенерировать страшное лицо
                 </>
               )}
@@ -63,7 +90,7 @@ const Index = () => {
                 variant="outline" 
                 className="border-red-600 text-red-600 hover:bg-red-900 hover:text-white"
               >
-                <Icon name="RefreshCw" />
+                <Icon name="RefreshCw" className="mr-2" />
                 Сгенерировать другое
               </Button>
             </div>

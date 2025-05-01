@@ -20,6 +20,20 @@ const ScaryImage = ({ imageUrl, isLoading }: ScaryImageProps) => {
     }
   }, [imageUrl]);
 
+  const handleRetry = () => {
+    // Перезагружаем изображение с новым параметром для обхода кеша
+    if (imageUrl) {
+      const newUrl = `${imageUrl.split('&sig=')[0]}&sig=${new Date().getTime()}`;
+      const img = new Image();
+      img.onload = () => {
+        window.location.href = newUrl;
+      };
+      img.src = newUrl;
+    } else {
+      window.location.reload();
+    }
+  };
+
   if (!imageUrl && !isLoading) {
     return (
       <div className="relative overflow-hidden rounded-xl bg-gray-900 border-2 border-dashed border-gray-700 flex items-center justify-center h-[400px]">
@@ -34,7 +48,17 @@ const ScaryImage = ({ imageUrl, isLoading }: ScaryImageProps) => {
   return (
     <div className="relative overflow-hidden rounded-xl bg-gray-900">
       {isLoading || !loaded ? (
-        <Skeleton className="h-[400px] w-full bg-gray-800 animate-pulse" />
+        <div className="h-[400px] w-full">
+          <Skeleton className="h-full w-full bg-gray-800 animate-pulse" />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <Icon name="ImageDown" size={40} className="mx-auto mb-2 animate-bounce" />
+                <p>Загружаем страшное изображение...</p>
+              </div>
+            </div>
+          )}
+        </div>
       ) : null}
       
       {imageUrl && !imageError ? (
@@ -53,7 +77,7 @@ const ScaryImage = ({ imageUrl, isLoading }: ScaryImageProps) => {
         <div className="flex flex-col items-center justify-center h-[400px] text-red-500">
           <Icon name="AlertCircle" size={48} className="mb-4" />
           <p className="text-center mb-4">Не удалось загрузить изображение</p>
-          <Button variant="destructive" onClick={() => window.location.reload()}>
+          <Button variant="destructive" onClick={handleRetry}>
             <Icon name="RefreshCw" className="mr-2" />
             Попробовать снова
           </Button>
