@@ -1,107 +1,160 @@
 
-import { useState, useEffect } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import Icon from "@/components/ui/icon";
+import { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Skeleton } from './ui/skeleton';
+import Icon from './ui/icon';
+
+// Список APIs для получения страшных изображений
+const SCARY_IMAGE_APIS = [
+  // Прямые ссылки на страшные изображения
+  "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=800&auto=format", // Маска
+  "https://images.unsplash.com/photo-1602493053231-90293aea8d81?w=800&auto=format", // Кладбище
+  "https://images.unsplash.com/photo-1635016288720-908f4577696f?w=800&auto=format", // Тыква
+  "https://images.unsplash.com/photo-1604005950576-8430bba49bc4?w=800&auto=format", // Лес
+  "https://images.unsplash.com/photo-1414490929659-9a12b7e31907?w=800&auto=format", // Туман
+  "https://images.unsplash.com/photo-1596627118111-5ab204b0f130?w=800&auto=format", // Жуткая кукла
+  "https://images.unsplash.com/photo-1516410529446-2c777cb7366d?w=800&auto=format", // Туннель
+  "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=800&auto=format", // Колодец
+  "https://images.unsplash.com/photo-1603367433513-635b6c2e412a?w=800&auto=format", // Заброшенный дом
+  "https://images.unsplash.com/photo-1602179475152-79423f43ec53?w=800&auto=format", // Рука зомби
+  "https://images.unsplash.com/photo-1513001900722-370f803f498d?w=800&auto=format", // Страшная маска
+  "https://images.unsplash.com/photo-1508465818285-f05a6e2f4fad?w=800&auto=format", // Вороны
+];
+
+// Список ключевых слов для генерации эффекта ужаса
+const SCARY_KEYWORDS = [
+  "жуткое лицо",
+  "призрак",
+  "демон",
+  "зомби",
+  "монстр",
+  "кошмар",
+  "ведьма",
+  "вампир",
+  "оборотень",
+  "потусторонний",
+  "паранормальное",
+  "смерть",
+  "страх",
+  "ужас",
+  "кровь",
+];
+
+// Функция для выбора случайного элемента из массива
+const getRandomItem = <T,>(items: T[]): T => {
+  return items[Math.floor(Math.random() * items.length)];
+};
+
+// Функция для эффекта мерцания
+const getFlickerEffect = () => {
+  const intensity = Math.random() * 0.3;
+  return {
+    filter: `brightness(${0.7 + intensity})`,
+    transition: 'filter 0.5s ease',
+  };
+};
 
 interface ScaryImageProps {
-  imageUrl: string;
-  isLoading: boolean;
+  className?: string;
 }
 
-const ScaryImage = ({ imageUrl, isLoading }: ScaryImageProps) => {
-  const [loaded, setLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+export default function ScaryImage({ className = "" }: ScaryImageProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState<string>(getRandomItem(SCARY_KEYWORDS));
+  const [flickerStyle, setFlickerStyle] = useState({});
 
-  useEffect(() => {
-    if (imageUrl) {
-      setLoaded(false);
-      setImageError(false);
-    }
-  }, [imageUrl]);
-
-  const handleRetry = () => {
-    if (imageUrl) {
-      // Попытка загрузить изображение заново
-      const img = new Image();
-      img.onload = () => {
-        setImageError(false);
-        setLoaded(true);
-        // Обновляем URL с новым параметром для обхода кеша
-        window.location.reload();
+  // Функция для генерации нового страшного изображения
+  const generateNewImage = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    
+    try {
+      // Выбираем новое ключевое слово для контекста
+      const newKeyword = getRandomItem(SCARY_KEYWORDS);
+      setKeyword(newKeyword);
+      
+      // Получаем случайное изображение из нашего списка
+      const randomImage = getRandomItem(SCARY_IMAGE_APIS);
+      
+      // Проверка доступности изображения перед установкой
+      const imgCheck = new Image();
+      imgCheck.onload = () => {
+        setImageUrl(randomImage);
+        setIsLoading(false);
+        setFlickerStyle(getFlickerEffect());
       };
-      img.onerror = () => {
-        // Если изображение все равно не загружается, перезагружаем страницу
-        window.location.reload();
+      imgCheck.onerror = () => {
+        throw new Error("Ошибка загрузки изображения");
       };
-      img.src = imageUrl;
-    } else {
-      window.location.reload();
+      imgCheck.src = randomImage;
+    } catch (error) {
+      console.error("Ошибка при загрузке изображения:", error);
+      setErrorMessage("Не удалось загрузить изображение. Попробуйте еще раз.");
+      setIsLoading(false);
     }
   };
 
-  if (!imageUrl && !isLoading) {
-    return (
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-b from-gray-900 to-black border border-gray-800 flex items-center justify-center h-[400px] group transition-all duration-500">
-        <div className="text-center p-6 transform group-hover:scale-105 transition-transform duration-300">
-          <Icon name="Ghost" size={60} className="mx-auto mb-4 text-gray-600 animate-pulse" />
-          <p className="text-gray-500">Нажмите кнопку, чтобы сгенерировать пугающее изображение</p>
-        </div>
-      </div>
-    );
-  }
+  // Генерируем изображение при первом рендере
+  useEffect(() => {
+    generateNewImage();
+    
+    // Эффект периодического мерцания
+    const flickerInterval = setInterval(() => {
+      setFlickerStyle(getFlickerEffect());
+    }, 3000);
+    
+    return () => clearInterval(flickerInterval);
+  }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-xl bg-gradient-to-b from-gray-900 to-black">
-      {isLoading || !loaded ? (
-        <div className="h-[400px] w-full">
-          <Skeleton className="h-full w-full bg-gradient-to-r from-gray-800 to-gray-900 animate-pulse" />
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <Icon name="ImageDown" size={40} className="mx-auto mb-2 animate-bounce" />
-                <p className="animate-pulse">Загружаем страшное изображение...</p>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : null}
+    <div className={`flex flex-col items-center ${className}`}>
+      <div className="mb-6 text-center">
+        <h2 className="text-xl mb-2 font-semibold text-red-500 animate-flicker">
+          {keyword.toUpperCase()}
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Это изображение может вызвать чувство тревоги...
+        </p>
+      </div>
       
-      {imageUrl && !imageError ? (
-        <div className="relative group">
-          <img
-            src={imageUrl}
-            alt="Пугающее изображение"
-            className={`w-full h-auto max-h-[600px] object-cover transition-all duration-500 ${
-              loaded ? "opacity-100" : "opacity-0"
-            } group-hover:scale-105 transition-transform duration-300`}
-            onLoad={() => setLoaded(true)}
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-            <p className="text-white text-sm backdrop-blur-sm bg-black/30 px-4 py-2 rounded-full">
-              Пугающее изображение
-            </p>
+      <div className="scary-image-container w-full max-w-2xl aspect-video mb-6">
+        {isLoading ? (
+          <Skeleton className="scary-loading w-full h-full" />
+        ) : errorMessage ? (
+          <div className="flex flex-col items-center justify-center w-full h-80 bg-gray-900 rounded-lg border border-red-900 p-4">
+            <Icon name="AlertCircle" className="text-red-500 mb-3" size={48} />
+            <p className="text-red-400 text-center">{errorMessage}</p>
           </div>
-        </div>
-      ) : null}
-
-      {imageError && (
-        <div className="flex flex-col items-center justify-center h-[400px] text-red-500 bg-gray-900/50 backdrop-blur-sm">
-          <Icon name="AlertCircle" size={48} className="mb-4" />
-          <p className="text-center mb-4">Не удалось загрузить изображение</p>
-          <Button 
-            variant="destructive" 
-            onClick={handleRetry}
-            className="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-800 hover:to-red-950 shadow-lg shadow-red-900/20"
-          >
-            <Icon name="RefreshCw" className="mr-2" />
-            Попробовать снова
-          </Button>
-        </div>
-      )}
+        ) : (
+          <img 
+            src={imageUrl || ""} 
+            alt="Страшное изображение" 
+            className="w-full h-full object-cover rounded-lg transition-all duration-500"
+            style={flickerStyle}
+            onError={() => setErrorMessage("Ошибка загрузки изображения")}
+          />
+        )}
+      </div>
+      
+      <Button 
+        onClick={generateNewImage} 
+        disabled={isLoading}
+        className="scary-button group"
+      >
+        {isLoading ? (
+          <>
+            <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+            Загрузка...
+          </>
+        ) : (
+          <>
+            <Icon name="Skull" className="mr-2 h-5 w-5 group-hover:animate-pulse" />
+            Генерировать новый ужас
+          </>
+        )}
+      </Button>
     </div>
   );
-};
-
-export default ScaryImage;
+}
